@@ -1,0 +1,37 @@
+name: Build preset index
+on:
+  push:
+    branches: [main]
+    paths: ["presets/**"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build index.json
+        run: |
+          echo "[" > index.json
+          first=true
+          for f in presets/*.json; do
+            [ -f "$f" ] || continue
+            name=$(jq -r '.name // "Untitled"' "$f")
+            author=$(jq -r '.author // "Anonymous"' "$f")
+            desc=$(jq -r '.description // ""' "$f")
+            url="https://raw.githubusercontent.com/${{ github.repository }}/main/$f"
+            if [ "$first" = true ]; then first=false; else echo "," >> index.json; fi
+            jq -n --arg n "$name" --arg a "$author" --arg d "$desc" --arg u "$url" \
+              '{name:$n, author:$a, description:$d, file:$u}' >> index.json
+          done
+          echo "]" >> index.json
+
+      - name: Commit updated index
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.json
+          git diff --cached --quiet || git commit -m "Rebuild index.json"
+          git push
