@@ -21,10 +21,13 @@ jobs:
             name=$(jq -r '.name // "Untitled"' "$f")
             author=$(jq -r '.author // "Anonymous"' "$f")
             desc=$(jq -r '.description // ""' "$f")
+            mode=$(jq -r '.mode // "grid"' "$f")
+            pc=$(jq '.playerCount // 0' "$f")
             url="https://raw.githubusercontent.com/${{ github.repository }}/main/$f"
             if [ "$first" = true ]; then first=false; else echo "," >> index.json; fi
-            jq -n --arg n "$name" --arg a "$author" --arg d "$desc" --arg u "$url" \
-              '{name:$n, author:$a, description:$d, file:$u}' >> index.json
+            jq -n --arg n "$name" --arg a "$author" --arg d "$desc" \
+              --arg m "$mode" --argjson pc "$pc" --arg u "$url" \
+              '{name:$n, author:$a, description:$d, mode:$m, playerCount:$pc, file:$u}' >> index.json
           done
           echo "]" >> index.json
 
